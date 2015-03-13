@@ -56,7 +56,6 @@ static const int kLevelMonitorScratchBufferSize        = kMaxFramesPerSlice;
 static const int kMaximumMonitoringChannels            = 16;
 static const NSTimeInterval kMaxBufferDurationWithVPIO = 0.01;
 static const Float32 kNoValue                          = -1.0;
-#define kNoAudioErr                            -2222
 
 static void * kChannelPropertyChanged = &kChannelPropertyChanged;
 
@@ -577,7 +576,7 @@ static OSStatus inputAvailableCallback(void *inRefCon, AudioUnitRenderActionFlag
     }
     
     if ( result == noErr && inNumberFrames == 0 ) {
-        result = kNoAudioErr;
+        result = kAENoAudioErr;
     }
     
     if ( result == noErr ) {
