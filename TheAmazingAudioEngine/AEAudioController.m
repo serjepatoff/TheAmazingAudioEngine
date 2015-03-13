@@ -3807,7 +3807,7 @@ static void * firstUpstreamAudiobusSenderPort(AEChannelRef channel) {
 }
 -(void)main {
     @autoreleasepool {
-        [self setThreadPriority:0.0];
+        [self setThreadPriority:0.1];
         pthread_setname_np("com.theamazingaudioengine.AEAudioControllerMessagePollThread");
         while ( ![self isCancelled] ) {
             @autoreleasepool {
