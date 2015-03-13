@@ -3805,8 +3805,13 @@ static void * firstUpstreamAudiobusSenderPort(AEChannelRef channel) {
         while ( ![self isCancelled] ) {
             @autoreleasepool {
                 if ( AEAudioControllerHasPendingMainThreadMessages(_audioController) ) {
-                    [_audioController performSelectorOnMainThread:@selector(pollForMessageResponses) withObject:nil waitUntilDone:NO];
+                    __weak typeof(_audioController) weakAudioController = _audioController;
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        __strong typeof(weakAudioController) strongAudioController = weakAudioController;
+                        [strongAudioController pollForMessageResponses];
+                    });
                 }
+                
                 usleep(_pollInterval);
             }
         }
