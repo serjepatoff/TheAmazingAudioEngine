@@ -29,6 +29,8 @@ extern "C" {
 
 #import <AudioToolbox/AudioToolbox.h>
 #import <AudioUnit/AudioUnit.h>
+    
+#define kAENoAudioErr                            -2222
 
 @class AEAudioController;
 
