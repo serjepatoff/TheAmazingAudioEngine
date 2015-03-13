@@ -1539,7 +1539,7 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
     }
 }
 
--(void)pollForMessageResponses {
+-(void)pollForMessageResponses:(BOOL)stopOnSuccess {
     pthread_t thread = pthread_self();
     while ( 1 ) {
         message_t *message = NULL;
@@ -1586,6 +1586,7 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
             break;
         }
         
+        BOOL messageWasHandled = NO;
         if ( message->responseBlock ) {
             ((__bridge void(^)())message->responseBlock)();
             CFBridgingRelease(message->responseBlock);
@@ -1594,12 +1595,15 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
             if ( _pollThread && _pendingResponses == 0 ) {
                 _pollThread.pollInterval = kIdleMessagingPollDuration;
             }
+            
+            messageWasHandled = YES;
         } else if ( message->handler ) {
             message->handler(self, 
                              message->userInfoLength > 0
                              ? (message->userInfoByReference ? message->userInfoByReference : message+1) 
                              : NULL, 
                              message->userInfoLength);
+            messageWasHandled = YES;
         }
         
         if ( message->block ) {
@@ -1607,6 +1611,8 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
         }
         
         free(message);
+        
+        if (messageWasHandled && stopOnSuccess) break;
     }
 }
 
@@ -1637,11 +1643,11 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
         if ( !self.running ) {
             if ( [NSThread isMainThread] ) {
                 processPendingMessagesOnRealtimeThread(self);
-                [self pollForMessageResponses];
+                [self pollForMessageResponses:NO];
             } else {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     processPendingMessagesOnRealtimeThread(self);
-                    [self pollForMessageResponses];
+                    [self pollForMessageResponses:NO];
                 });
             }
         }
@@ -1661,7 +1667,7 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
     // Wait for response
     uint64_t giveUpTime = mach_absolute_time() + (1.0 * __secondsToHostTicks);
     while ( !finished && mach_absolute_time() < giveUpTime && self.running ) {
-        [self pollForMessageResponses];
+        [self pollForMessageResponses:NO];
         if ( finished ) break;
         [NSThread sleepForTimeInterval:_preferredBufferDuration ? _preferredBufferDuration : 0.01];
     }
@@ -1672,7 +1678,7 @@ static void processPendingMessagesOnRealtimeThread(__unsafe_unretained AEAudioCo
         }
         @synchronized ( self ) {
             processPendingMessagesOnRealtimeThread(self);
-            [self pollForMessageResponses];
+            [self pollForMessageResponses:NO];
         }
     }
 }
@@ -3808,7 +3814,7 @@ static void * firstUpstreamAudiobusSenderPort(AEChannelRef channel) {
                     __weak typeof(_audioController) weakAudioController = _audioController;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         __strong typeof(weakAudioController) strongAudioController = weakAudioController;
-                        [strongAudioController pollForMessageResponses];
+                        [strongAudioController pollForMessageResponses:YES];
                     });
                 }
                 
