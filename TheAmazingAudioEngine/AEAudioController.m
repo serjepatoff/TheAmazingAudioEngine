@@ -48,7 +48,7 @@ static double __secondsToHostTicks = 0.0;
 static const int kMaximumChannelsPerGroup              = 100;
 static const int kMaximumCallbacksPerSource            = 15;
 static const int kMessageBufferLength                  = 8192;
-static const NSTimeInterval kIdleMessagingPollDuration = 0.1;
+static const useconds_t kIdleMessagingPollDuration     = 33333;
 static const UInt32 kMaxFramesPerSlice                 = 4096;
 static const int kScratchBufferFrames                  = kMaxFramesPerSlice;
 static const int kInputAudioBufferFrames               = kMaxFramesPerSlice;
@@ -255,7 +255,7 @@ typedef struct {
 
 @interface AEAudioControllerMessagePollThread : NSThread
 - (id)initWithAudioController:(AEAudioController*)audioController;
-@property (nonatomic, assign) NSTimeInterval pollInterval;
+@property (nonatomic, assign) useconds_t pollInterval;
 @end
 
 @interface AEAudioController () {
@@ -3807,7 +3807,7 @@ static void * firstUpstreamAudiobusSenderPort(AEChannelRef channel) {
                 if ( AEAudioControllerHasPendingMainThreadMessages(_audioController) ) {
                     [_audioController performSelectorOnMainThread:@selector(pollForMessageResponses) withObject:nil waitUntilDone:NO];
                 }
-                usleep(_pollInterval*1.0e6);
+                usleep(_pollInterval);
             }
         }
     }
